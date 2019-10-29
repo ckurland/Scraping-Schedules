@@ -19,58 +19,75 @@ include("rvest")
 include("tidyverse")
 ```
 
-I am going to investigate the Spring 2019 CSCI class schedule.
+
+We first want to be able to easily scrape mulitple urls that are in the same format. This function aallows the process to be simplified while scraping class schedules. We now want to begin scraping data off of the html page we loaded. This will allow us to gain insights as to each instructors student count and unit load that they are teaching.  
 
 ```{R}
-csci_url <- "http://ems.csuchico.edu/APSS/schedule/spr2019/CSCI.shtml"
-csci_2019_html <- read_html(csci_url)
-```
+scrape <- function(location){
+  csci_html <- read_html(location)
 
+  classes <- csci_html %>% html_nodes(".classrow,.classrowalt")
 
-We now want to begin scraping data off of the html page we loaded. This will allow us to gain insights as to each instructors student count and unit load that they are teaching.  
-
-```{R}
-classes <- csci_2019_html %>% html_nodes(".classrow,.classrowalt")
-
-class_subject <- classes %>%
+  class_subject <- classes %>%
                 html_nodes("td.subj") %>%
                 html_text()
 
-cat_num <- classes %>%
+  cat_num <- classes %>%
                 html_nodes("td.cat_num") %>%
-                html_text() %>%
-                as.integer()
+                html_text()
 
-sect_num <- classes %>%
+  sect_num <- classes %>%
                 html_nodes("td.sect") %>%
                 html_text() %>%
                 as.integer()
 
-class_title <- classes %>%
+  class_title <- classes %>%
                 html_nodes("td.title") %>%
                 html_text()
 
-instructors <- classes %>%
+  instructors <- classes %>%
                 html_nodes("td.Instructor") %>%
                 html_text()
 
-units <- classes %>%
+  units <- classes %>%
                 html_nodes("td.units") %>%
                 html_text() %>%
                 as.integer()
 
-students <- classes %>%
+  students <- classes %>%
                 html_nodes("td.enrtot") %>%
                 html_text() %>%
                 as.integer()
 
-research <- tibble(subject=class_subject,cat_num=cat_num,
+  research <- tibble(subject=class_subject,cat_num=cat_num,
                    section=sect_num,title=class_title,
                    instructor=instructors,
                    units=units,students=students)
+  return(research)
+}
+  
 ```
 
 
+With a function created to easily scrape similar schedule formats, we now just have to load in each url and call the function on each one. The total variable contains all the tables combined.    
+
+```{R}
+csci_2019_url <- "http://ems.csuchico.edu/APSS/schedule/spr2019/CSCI.shtml"
+csci_2020_url <- "http://ems.csuchico.edu/APSS/schedule/spr2020/CSCI.shtml"
+math_2019_url <- "http://ems.csuchico.edu/APSS/schedule/spr2019/MATH.shtml"
+math_2020_url <- "http://ems.csuchico.edu/APSS/schedule/spr2020/MATH.shtml"
+
+
+
+csci_2019 <- scrape(csci_2019_url)
+csci_2020 <- scrape(csci_2020_url)
+math_2019 <- scrape(math_2019_url)
+math_2020 <- scrape(math_2020_url)
+
+total <- bind_rows(csci_2019,csci_2020,math_2019,math_2020)
+
+head(total)
+```
 
 
 
